@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+prompt="> "
+save="tasks.txt"
+swap="tasks.txt.swp"
+
+# add a task with name $1 and time allocation $2 (in minutes)
+function add() {
+  echo "  $1 ($2m)" >> "$save"
+}
+
+# remove task with name $1
+function remove() {
+  cat "$save" | sed -E "/. ($1 \\(.+\\))/d" > "$swap"
+  cp "$swap" "$save"
+}
+
+# list all tasks
+function list() {
+  cat "tasks.txt"
+}
+
+# clear active task
+function idle() {
+  cat "$save" | sed -E -e 's/\* (.+)/  \1/g' > "$swap"
+  cp "$swap" "$save"
+}
+
+# set task with name $1 to be active
+function go() {
+  idle
+  cat "$save" | sed -E -e "s/. ($1.+)/* \\1/g" > "$swap"
+  cp "$swap" "$save"
+}
+
+# evaluate a command $1 with arguments $2 $3 ...
+function evaluate() {
+  case "$1" in
+  a|add)
+    add $2 $3
+    ;;
+  r|remove)
+    remove $2
+    ;;
+  l|list)
+    list
+    ;;
+  g|go)
+    go $2
+    ;;
+  i|idle)
+    idle
+    ;;
+  e|exit)
+    exit
+    ;;
+  *)
+    echo "Unknown command '$1'"
+    ;;
+  esac
+}
+
+# main
+while : ; do
+  read -p "$prompt" cmd
+
+  # eval is used to tokenize $cmd
+  eval 'evaluate '$cmd
+done
