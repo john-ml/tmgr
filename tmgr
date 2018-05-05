@@ -63,6 +63,8 @@ function evaluate() {
   e|exit)
     exit
     ;;
+  '')
+    ;;
   *)
     echo "Unknown command '$1'"
     ;;
