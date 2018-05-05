@@ -37,16 +37,16 @@ function go() {
 function evaluate() {
   case "$1" in
   a|add)
-    add $2 $3
+    add "$2" "$3"
     ;;
   r|remove)
-    remove $2
+    remove "$2"
     ;;
   l|list)
     list
     ;;
   g|go)
-    go $2
+    go "$2"
     ;;
   i|idle)
     idle
