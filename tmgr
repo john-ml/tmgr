@@ -15,6 +15,12 @@ function remove() {
   cp "$swap" "$save"
 }
 
+# mark task with name $1 as closed
+function close() {
+  cat "$save" | sed -E -e "s/. ($1 \\(.+\\))/x \\1/g" > "$swap"
+  cp "$swap" "$save"
+}
+
 # list all tasks
 function list() {
   cat "tasks.txt"
@@ -41,6 +47,9 @@ function evaluate() {
     ;;
   r|remove)
     remove "$2"
+    ;;
+  c|close)
+    close "$2"
     ;;
   l|list)
     list
