@@ -26,7 +26,7 @@ indicator='.'
 function verify() {
   check=$(echo $1 | sed -E -e "s/$2//")
   if [ "$check" != "" ]; then
-    echo "The string '$1' is invalid (does not match the regex '$taskname')."
+    echo "The string '$1' is invalid (does not match the regex '$2')."
     (exit 1)
   else
     (exit 0)
