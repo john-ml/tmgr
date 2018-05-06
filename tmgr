@@ -124,13 +124,17 @@ function list() {
 # add a task with name $1 and time allocation $2 (in minutes)
 function add() {
   if verify "$1" "$taskname"; then
-    echo "$OPEN $1 (0 of $2 min) {$(date +%s)}" >> "$save"
+    if verify "$2" "[0-9]+"; then
+      echo "$OPEN $1 (0 of $2 min) {$(date +%s)}" >> "$save"
+    fi
   fi
 }
 
 # remove task with name $1
 function remove() {
-  sedit "/$indicator $1 $metadata/d"
+  if verify "$1" "$taskname"; then
+    sedit "/$indicator $1 $metadata/d"
+  fi
 }
 
 # adjust task $1 to take $2 minutes
@@ -153,7 +157,9 @@ function rename() {
 
 # mark task with name $1 as closed
 function close() {
-  mark "$1" $CLOSED
+  if verify "$1" "$taskname"; then
+    mark "$1" $CLOSED
+  fi
 }
 
 # mark active task as semi-closed
@@ -163,9 +169,11 @@ function idle() {
 
 # set task with name $1 to be active
 function go() {
-  idle
-  update_stamp "$1"
-  mark "$1" $ACTIVE
+  if verify "$1" "$taskname"; then
+    idle
+    update_stamp "$1"
+    mark "$1" $ACTIVE
+  fi
 }
 
 # sort task list
