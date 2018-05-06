@@ -22,8 +22,6 @@ progress_grouped='\(([0-9]+) of ([0-9]+) min\)'
 timestamp='\{[0-9]+\}'
 timestamp_grouped='\{([0-9]+)\}'
 metadata="$progress $timestamp"
-parent="$indicator $taskname $metadata"
-child="$indicator  *$branch$taskname $metadata"
 
 # ---------------------------------------------------------------------------
 
@@ -62,6 +60,16 @@ function sedit() {
 function state() {
   cat "$save" | tr '\n' ';' | \
     sed -E -e "s/.*($indicator) $branches$1 $progress $timestamp.*/\\1/"
+}
+
+# get indentation whitespace of task $1
+function indentspace() {
+#  echo "\"$(cat "$save" | tr '\n' ';' | \
+#    sed -E -e "s/.*$indicator ($branches)$1 $progress $timestamp.*/\\1/" | \
+#    sed -E -e "s/$branch/ /g")\""
+  cat "$save" | tr '\n' ';' | \
+    sed -E -e "s/.*$indicator ($branches)$1 $progress $timestamp.*/\\1/" | \
+    sed -E -e "s/$branch/ /g"
 }
 
 # get timestamp of task $1
@@ -119,8 +127,15 @@ function mark() {
   sedit "s/$indicator ($branches$1 $metadata)/$2 \\1/g"
 }
 
-# collapse all tasks and subtasks onto a single line (so one task tree per line)
+# collapse all tasks and subtasks with indentation at least $1 onto a single line
 function collapse() {
+  if [ "$1" == "" ]; then
+    anyindent=""
+  else
+    anyindent="$(echo "$1" | sed -E 's/ / */g')$branch?"
+  fi
+  parent="$indicator $anyindent$taskname $metadata"
+  child="$indicator $1 *$branch$taskname $metadata"
   echo -e "$(cat "$save" | tr '\n' ';' | \
     sed -E -e "s/($parent(;$child)*);/\\1\\\\n/g")" > "$swap"
   cp "$swap" "$save"
@@ -151,7 +166,8 @@ function add() {
 # remove task with name $1 and any subtasks
 function remove() {
   if verify "$1" "$taskname"; then
-    collapse
+    indent="$(indentspace $1)"
+    collapse "$indent"
     sedit "/$prefix$1 $metadata.*/d"
     expand
   fi
