@@ -33,6 +33,18 @@ function verify() {
   fi
 }
 
+# check that the number $1 (given) is equal to $2 (expected).
+# print $3 indicating proper usage if not
+function verify_usage() {
+  if [ "$1" -ne "$2" ]; then
+    echo "Expected $2 arguments but got $1."
+    echo "Usage: $3"
+    (exit 1)
+  else
+    (exit 0) 
+  fi
+}
+
 # apply sed command $1 to the task list
 function sedit() {
   cat "$save" | sed -E -e "$1" > "$swap"
@@ -138,34 +150,53 @@ function go() {
 
 # evaluate a command $1 with arguments $2 $3 ...
 function evaluate() {
+  argc=$(echo $#-1 | bc)
   case "$1" in
   l|list)
-    list
+    if verify_usage $argc 0 "list"; then
+      list
+    fi
     ;;
   a|add)
-    add "$2" "$3"
+    if verify_usage $argc 2 "add name minutes"; then
+      add "$2" "$3"
+    fi
     ;;
   r|remove)
-    remove "$2"
+    if verify_usage $argc 1 "remove name"; then
+      remove "$2"
+    fi
     ;;
   c|close)
-    close "$2"
+    if verify_usage $argc 1 "close name"; then
+      close "$2"
+    fi
     ;;
   i|idle)
-    idle
+    if verify_usage $argc 0 "idle"; then
+      idle
+    fi
     ;;
   s|sort)
-    sort "$save" > "$swap"
-    cp "$swap" "$save"
+    if verify_usage $argc 0 "sort"; then
+      sort "$save" > "$swap"
+      cp "$swap" "$save"
+    fi
     ;;
   g|go)
-    go "$2"
+    if verify_usage $argc 1 "go name"; then
+      go "$2"
+    fi
     ;;
   cl|clear)
-    clear
+    if verify_usage $argc 0 "clear"; then
+      clear
+    fi
     ;;
   e|exit)
-    exit
+    if verify_usage $argc 0 "exit"; then
+      exit
+    fi
     ;;
   '')
     ;;
