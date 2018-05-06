@@ -37,7 +37,7 @@ function verify() {
 # print $3 indicating proper usage if not
 function verify_usage() {
   if [ "$1" -ne "$2" ]; then
-    echo "Expected $2 arguments but got $1."
+    echo "Expected $2 argument(s) but got $1."
     echo "Usage: $3"
     (exit 1)
   else
@@ -148,6 +148,18 @@ function go() {
   mark "$1" $ACTIVE
 }
 
+# sort task list
+function sort_list() {
+  printf "" > "$swap"
+
+  # sort by status, then alphanumerically
+  grep -E "^$CLOSED" "$save" | sort >> "$swap"
+  grep -E "^$SEMICLOSED" "$save" | sort >> "$swap"
+  grep -E "^$OPEN" "$save" | sort >> "$swap"
+  grep -E "^$ACTIVE" "$save" | sort >> "$swap"
+  cp "$swap" "$save"
+}
+
 # evaluate a command $1 with arguments $2 $3 ...
 function evaluate() {
   argc=$(echo $#-1 | bc)
@@ -179,8 +191,7 @@ function evaluate() {
     ;;
   s|sort)
     if verify_usage $argc 0 "sort"; then
-      sort "$save" > "$swap"
-      cp "$swap" "$save"
+      sort_list
     fi
     ;;
   g|go)
@@ -192,6 +203,21 @@ function evaluate() {
     if verify_usage $argc 0 "clear"; then
       clear
     fi
+    ;;
+  h|help)
+    echo "Commands:"
+    echo "  l, list: list all tasks"
+    echo "  a, add: add task to list"
+    echo "  r, remove: remove task from list"
+    echo "  c, close: mark task as closed"
+    echo "  i, idle: pause active task"
+    echo "  s, sort: sort task list"
+    echo "  g, go: set new active task"
+    echo "  cl, clear: clear screen"
+    echo "  h, help: show this text"
+    echo "  e, exit: exit"
+    echo "idle, sort, clear, and exit take no arguments."
+    echo "Enter any of the other commands without any arguments for usage details."
     ;;
   e|exit)
     if verify_usage $argc 0 "exit"; then
