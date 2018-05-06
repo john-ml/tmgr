@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-prompt="> "
-branch="└"
+# save file and swap file (used to make edits)
 save="tasks.txt"
 swap="tasks.txt.swp"
+
+# display marks
+prompt="> "
+branch="└"
 
 # indicator marks
 CLOSED='x'
@@ -12,8 +15,8 @@ SEMICLOSED='-'
 ACTIVE='\*'
 
 # regexes used to maintain task list
-instruction='[a-zA-Z0-9, -]+'
-indicator='.'
+instruction='[a-zA-Z0-9, -]+' # valid command
+indicator="[$CLOSED$OPEN$SEMICLOSED$ACTIVE]"
 branches=" *$branch?"
 prefix="$indicator $branches"
 taskname='[a-zA-Z0-9,-]+'
@@ -22,6 +25,7 @@ progress_grouped='\(([0-9]+) of ([0-9]+) min\)'
 timestamp='\{[0-9]+\}'
 timestamp_grouped='\{([0-9]+)\}'
 metadata="$progress $timestamp"
+entry="$prefix$taskname $metadata"
 
 # ---------------------------------------------------------------------------
 
@@ -135,6 +139,8 @@ function mark() {
 }
 
 # collapse all tasks and subtasks with indentation at least $1 onto a single line
+# the branch character is considered part of the indentation
+# e.g. "  ." would be have indentation "   " where "." is the branch character
 function collapse() {
   if [ "$1" == "" ]; then
     anyindent=""
