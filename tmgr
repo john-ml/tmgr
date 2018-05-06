@@ -187,6 +187,17 @@ function branch() {
   fi
 }
 
+# remove all tasks (and their children) marked as closed
+function purge() {
+  # preserve subtrees
+  collapse
+
+  printf "" > "$swap"
+  grep -v -E "^$CLOSED" "$save" >> "$swap"
+  cp "$swap" "$save"
+
+  expand
+}
 
 # mark task with name $1 as closed
 function close() {
@@ -260,6 +271,11 @@ function evaluate() {
       branch "$2" "$3" "$4"
     fi
     ;;
+  p|purge)
+    if verify_usage $argc 0 "purge"; then
+      purge
+    fi
+    ;;
   c|close)
     if verify_usage $argc 1 "close name"; then
       close "$2"
@@ -293,6 +309,7 @@ function evaluate() {
     echo "  re, realloc: adjust estimated task duration"
     echo "  mv, rename: rename a task"
     echo "  b, branch: create a subtask"
+    echo "  p, purge: remove all closed tasks from list"
     echo "  c, close: mark task as closed"
     echo "  i, idle: pause active task"
     echo "  s, sort: sort task list"
