@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 prompt="> "
+branch="└"
 save="tasks.txt"
 swap="tasks.txt.swp"
 
@@ -12,13 +13,15 @@ ACTIVE='\*'
 
 # regexes used to maintain task list
 instruction='[a-zA-Z0-9, -]+'
+indicator='.'
+branches=" *$branch?"
+prefix="$indicator $branches"
 taskname='[a-zA-Z0-9,-]+'
 progress='\([0-9]+ of [0-9]+ min\)'
 progress_grouped='\(([0-9]+) of ([0-9]+) min\)'
 timestamp='\{[0-9]+\}'
 timestamp_grouped='\{([0-9]+)\}'
 metadata="$progress $timestamp"
-indicator='.'
 
 # ---------------------------------------------------------------------------
 
@@ -56,25 +59,25 @@ function sedit() {
 # get state of task $1
 function state() {
   cat "$save" | tr '\n' ';' | \
-    sed -E -e "s/.*($indicator) $1 $progress $timestamp.*/\\1/"
+    sed -E -e "s/.*($indicator) $branches$1 $progress $timestamp.*/\\1/"
 }
 
 # get timestamp of task $1
 function timestamp() {
   cat "$save" | tr '\n' ';' | \
-    sed -E -e "s/.*$indicator $1 $progress $timestamp_grouped.*/\\1/"
+    sed -E -e "s/.*$prefix$1 $progress $timestamp_grouped.*/\\1/"
 }
 
 # get time spent (in minutes) on task $1 so far
 function spent() {
   cat "$save" | tr '\n' ';' | \
-    sed -E -e "s/.*$indicator $1 $progress_grouped $timestamp_grouped.*/\\1/"
+    sed -E -e "s/.*$prefix$1 $progress_grouped $timestamp_grouped.*/\\1/"
 }
 
 # get time allocated (in minutes) for task $1
 function allocated() {
   cat "$save" | tr '\n' ';' | \
-    sed -E -e "s/.*$indicator $1 $progress_grouped $timestamp_grouped.*/\\2/"
+    sed -E -e "s/.*$prefix$1 $progress_grouped $timestamp_grouped.*/\\2/"
 }
 
 # ---------------------------------------------------------------------------
@@ -91,27 +94,27 @@ function update_task() {
   new_spent=$(echo "($old_spent*60 + ($new_stamp - $old_stamp)) / 60" | bc)
   error=$(echo "($new_stamp - $old_stamp) % 60" | bc)
   new_stamp=$(echo "$new_stamp - $error" | bc)
-  sedit "s/($indicator $1) $progress_grouped $timestamp/\\1 ($new_spent of \\3 min) {$new_stamp}/g"
+  sedit "s/($prefix$1) $progress_grouped $timestamp/\\1 ($new_spent of \\3 min) {$new_stamp}/g"
 }
 
 # set timestamp of task $1 to now
 function update_stamp() {
   new_stamp=$(date +%s)
-  sedit "s/($indicator $1 $progress) $timestamp/\\1 {$new_stamp}/g"
+  sedit "s/($prefix$1 $progress) $timestamp/\\1 {$new_stamp}/g"
 }
 
 # update timestamps and progresses of all active tasks
 function update() {
   printf "" > "$swap"
   while IFS="" read -r line; do
-    task=$(echo "$line" | sed -E -e "s/$indicator ($taskname) $metadata/\\1/") 
+    task=$(echo "$line" | sed -E -e "s/$prefix($taskname) $metadata/\\1/") 
     update_task "$task"
   done < "$save"
 }
 
 # mark a task with name $1 as $2
 function mark() {
-  sedit "s/$indicator ($1 $metadata)/$2 \\1/g"
+  sedit "s/$indicator ($branches$1 $metadata)/$2 \\1/g"
 }
 
 # ---------------------------------------------------------------------------
@@ -133,7 +136,7 @@ function add() {
 # remove task with name $1
 function remove() {
   if verify "$1" "$taskname"; then
-    sedit "/$indicator $1 $metadata/d"
+    sedit "/$prefix$1 $metadata/d"
   fi
 }
 
@@ -141,7 +144,7 @@ function remove() {
 function realloc() {
   if verify "$1" "$taskname"; then
     if verify "$2" "[0-9]+"; then
-      sedit "s/($indicator $1) $progress_grouped ($timestamp)/\\1 (\\2 of $2 min) \\4/g"
+      sedit "s/($prefix$1) $progress_grouped ($timestamp)/\\1 (\\2 of $2 min) \\4/g"
     fi
   fi
 }
@@ -150,10 +153,23 @@ function realloc() {
 function rename() {
   if verify "$1" "$taskname"; then
     if verify "$2" "$taskname"; then 
-      sedit "s/($indicator) $1 ($metadata)/\\1 $2 \\2/g"
+      sedit "s/($prefix)$1 ($metadata)/\\1 $2 \\2/g"
     fi
   fi
 }
+
+# create subtask $2 of task $1 to take $3 minutes
+function branch() {
+  if verify "$1" "$taskname"; then
+    if verify "$2" "$taskname"; then 
+      if verify "$3" "[0-9]+"; then
+        indent=$(cat "$save" | tr -d '\n' | sed -E -e "s/.*$indicator ($branches)$1 $metadata.*/\\1/" | sed -E -e "s/ |$branch/ /")
+        sedit "s/($prefix$1 $metadata)/\\1\n  $indent$branch$2 (0 of $3 min) {$(date +%s)}/g"
+      fi
+    fi
+  fi
+}
+
 
 # mark task with name $1 as closed
 function close() {
@@ -164,7 +180,7 @@ function close() {
 
 # mark active task as semi-closed
 function idle() {
-  sedit "s/$ACTIVE ($taskname $metadata)/$SEMICLOSED \\1/g"
+  sedit "s/$ACTIVE ($branches$taskname $metadata)/$SEMICLOSED \\1/g"
 }
 
 # set task with name $1 to be active
@@ -215,6 +231,11 @@ function evaluate() {
   mv|rename)
     if verify_usage $argc 2 "rename old new"; then
       rename "$2" "$3"
+    fi
+    ;;
+  b|branch)
+    if verify_usage $argc 3 "branch parent child minutes"; then
+      branch "$2" "$3" "$4"
     fi
     ;;
   c|close)
