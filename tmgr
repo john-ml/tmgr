@@ -4,44 +4,143 @@ prompt="> "
 save="tasks.txt"
 swap="tasks.txt.swp"
 
+# indicator marks
+CLOSED='x'
+OPEN=' '
+SEMICLOSED='-'
+ACTIVE='\*'
+
+# regexes used to maintain task list
+instruction='[a-zA-Z0-9, -]+'
+taskname='[a-zA-Z0-9,-]+'
+progress='\([0-9]+ of [0-9]+ m\)'
+progress_grouped='\(([0-9]+) of ([0-9]+) m\)'
+timestamp='\{[0-9]+\}'
+timestamp_grouped='\{([0-9]+)\}'
+metadata="$progress $timestamp"
+indicator='.'
+
+# ---------------------------------------------------------------------------
+
+# check that string $1 matches regex $2
+function verify() {
+  check=$(echo $1 | sed -E -e "s/$2//")
+  if [ "$check" != "" ]; then
+    echo "The string '$1' is invalid (does not match the regex '$taskname')."
+    (exit 1)
+  else
+    (exit 0)
+  fi
+}
+
+# apply sed command $1 to the task list
+function sedit() {
+  cat "$save" | sed -E -e "$1" > "$swap"
+  cp "$swap" "$save"
+}
+
+# ---------------------------------------------------------------------------
+
+# get state of task $1
+function state() {
+  cat "$save" | tr '\n' ';' | \
+    sed -E -e "s/.*($indicator) $1 $progress $timestamp.*/\\1/"
+}
+
+# get timestamp of task $1
+function timestamp() {
+  cat "$save" | tr '\n' ';' | \
+    sed -E -e "s/.*$indicator $1 $progress $timestamp_grouped.*/\\1/"
+}
+
+# get time spent (in minutes) on task $1 so far
+function spent() {
+  cat "$save" | tr '\n' ';' | \
+    sed -E -e "s/.*$indicator $1 $progress_grouped $timestamp_grouped.*/\\1/"
+}
+
+# get time allocated (in minutes) for task $1
+function allocated() {
+  cat "$save" | tr '\n' ';' | \
+    sed -E -e "s/.*$indicator $1 $progress_grouped $timestamp_grouped.*/\\2/"
+}
+
+# ---------------------------------------------------------------------------
+
+# set timestamp and progress of task $1 if it's active
+function update_task() {
+  stat=$(state $1)
+  echo "$stat"
+  if [ "\\$stat" != "$ACTIVE" ]; then
+    echo "ntohing to do here"
+    return
+  fi
+  old_stamp=$(timestamp "$1")
+  old_spent=$(spent "$1")
+  new_stamp=$(date +%s)
+  new_spent=$(echo "($old_spent*60+($new_stamp-$old_stamp))/60" | bc)
+  sedit "s/($indicator $1) $progress_grouped $timestamp/\\1 ($new_spent of \\3 m) {$new_stamp}/g"
+}
+
+# update timestamps and progresses of all active tasks
+function update() {
+  printf "" > "$swap"
+  while IFS="" read -r line; do
+    echo "$line"
+    task=$(echo "$line" | sed -E -e "s/$indicator ($taskname) $metadata/\\1/") 
+    echo "Updating $task"
+    update_task "$task"
+  done < "$save"
+}
+
+# mark a task with name $1 as $2
+function mark() {
+  sedit "s/$indicator ($1 $metadata)/$2 \\1/g"
+}
+
+update
+
+# ---------------------------------------------------------------------------
+
+# list all tasks
+function list() {
+  cat "tasks.txt" | sed -E -e "s/ $timestamp//g"
+}
+
 # add a task with name $1 and time allocation $2 (in minutes)
 function add() {
-  echo "  $1 ($2m)" >> "$save"
+  if verify "$1" "$taskname"; then
+    echo "$OPEN $1 (0 of $2 m) {$(date +%s)}" >> "$save"
+  fi
 }
 
 # remove task with name $1
 function remove() {
-  cat "$save" | sed -E "/. ($1 \\(.+\\))/d" > "$swap"
-  cp "$swap" "$save"
+  sedit "/$indicator $1 $metadata/d"
 }
 
 # mark task with name $1 as closed
 function close() {
-  cat "$save" | sed -E -e "s/. ($1 \\(.+\\))/x \\1/g" > "$swap"
-  cp "$swap" "$save"
+  mark "$1" $CLOSED
 }
 
-# list all tasks
-function list() {
-  cat "tasks.txt"
-}
-
-# clear active task
+# mark active task as semi-closed
 function idle() {
-  cat "$save" | sed -E -e 's/\* (.+)/  \1/g' > "$swap"
-  cp "$swap" "$save"
+  sedit "s/$ACTIVE ($taskname $metadata)/$SEMICLOSED \\1/g"
 }
 
 # set task with name $1 to be active
 function go() {
   idle
-  cat "$save" | sed -E -e "s/. ($1.+)/* \\1/g" > "$swap"
-  cp "$swap" "$save"
+  mark "$1" $ACTIVE
 }
 
 # evaluate a command $1 with arguments $2 $3 ...
 function evaluate() {
   case "$1" in
+  l|list)
+    list
+    ;;
   a|add)
     add "$2" "$3"
     ;;
@@ -51,14 +150,14 @@ function evaluate() {
   c|close)
     close "$2"
     ;;
-  l|list)
-    list
+  i|idle)
+    idle
     ;;
   g|go)
     go "$2"
     ;;
-  i|idle)
-    idle
+  cl|clear)
+    clear
     ;;
   e|exit)
     exit
@@ -71,10 +170,14 @@ function evaluate() {
   esac
 }
 
-# main
+# ---------------------------------------------------------------------------
+
 while : ; do
   read -p "$prompt" cmd
 
   # eval is used to tokenize $cmd
-  eval 'evaluate '$cmd
+  if verify "$cmd" "$instruction"; then
+    eval 'evaluate '$cmd
+  fi
 done
+
