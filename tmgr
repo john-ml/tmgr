@@ -13,8 +13,8 @@ ACTIVE='\*'
 # regexes used to maintain task list
 instruction='[a-zA-Z0-9, -]+'
 taskname='[a-zA-Z0-9,-]+'
-progress='\([0-9]+ of [0-9]+ m\)'
-progress_grouped='\(([0-9]+) of ([0-9]+) m\)'
+progress='\([0-9]+ of [0-9]+ min\)'
+progress_grouped='\(([0-9]+) of ([0-9]+) min\)'
 timestamp='\{[0-9]+\}'
 timestamp_grouped='\{([0-9]+)\}'
 metadata="$progress $timestamp"
@@ -91,7 +91,7 @@ function update_task() {
   new_spent=$(echo "($old_spent*60 + ($new_stamp - $old_stamp)) / 60" | bc)
   error=$(echo "($new_stamp - $old_stamp) % 60" | bc)
   new_stamp=$(echo "$new_stamp - $error" | bc)
-  sedit "s/($indicator $1) $progress_grouped $timestamp/\\1 ($new_spent of \\3 m) {$new_stamp}/g"
+  sedit "s/($indicator $1) $progress_grouped $timestamp/\\1 ($new_spent of \\3 min) {$new_stamp}/g"
 }
 
 # set timestamp of task $1 to now
@@ -124,7 +124,7 @@ function list() {
 # add a task with name $1 and time allocation $2 (in minutes)
 function add() {
   if verify "$1" "$taskname"; then
-    echo "$OPEN $1 (0 of $2 m) {$(date +%s)}" >> "$save"
+    echo "$OPEN $1 (0 of $2 min) {$(date +%s)}" >> "$save"
   fi
 }
 
@@ -137,7 +137,7 @@ function remove() {
 function realloc() {
   if verify "$1" "$taskname"; then
     if verify "$2" "[0-9]+"; then
-      sedit "s/($indicator $1) $progress_grouped ($timestamp)/\\1 (\\2 of $2 m) \\4/g"
+      sedit "s/($indicator $1) $progress_grouped ($timestamp)/\\1 (\\2 of $2 min) \\4/g"
     fi
   fi
 }
