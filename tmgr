@@ -239,9 +239,9 @@ function evaluate() {
 while : ; do
   read -p "$prompt" cmd
 
-  # eval is used to tokenize $cmd
   if verify "$cmd" "$instruction"; then
     update
+    # eval is used to tokenize $cmd
     eval 'evaluate '$cmd
   fi
 done
