@@ -148,10 +148,12 @@ function add() {
   fi
 }
 
-# remove task with name $1
+# remove task with name $1 and any subtasks
 function remove() {
   if verify "$1" "$taskname"; then
-    sedit "/$prefix$1 $metadata/d"
+    collapse
+    sedit "/$prefix$1 $metadata.*/d"
+    expand
   fi
 }
 
@@ -290,6 +292,7 @@ function evaluate() {
     echo "  r, remove: remove task from list"
     echo "  re, realloc: adjust estimated task duration"
     echo "  mv, rename: rename a task"
+    echo "  b, branch: create a subtask"
     echo "  c, close: mark task as closed"
     echo "  i, idle: pause active task"
     echo "  s, sort: sort task list"
