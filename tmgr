@@ -15,17 +15,17 @@ SEMICLOSED='-'
 ACTIVE='\*'
 
 # regexes used to maintain task list
-instruction='[a-zA-Z0-9, -]+' # valid command
-indicator="[$CLOSED$OPEN$SEMICLOSED$ACTIVE]"
-branches=" *$branch?"
-prefix="$indicator $branches"
-taskname='[a-zA-Z0-9,-]+'
-progress='\([0-9]+ of [0-9]+ min\)'
+instruction='[a-zA-Z0-9, -]+'                    # valid command
+indicator="[$CLOSED$OPEN$SEMICLOSED$ACTIVE]"     # status indicator
+branches=" *$branch?"                            # indentation (for subtasks)
+prefix="$indicator $branches"                    # everything before the task name
+taskname='[a-zA-Z0-9,-]+'                        # task name
+progress='\([0-9]+ of [0-9]+ min\)'              # completion status
 progress_grouped='\(([0-9]+) of ([0-9]+) min\)'
-timestamp='\{[0-9]+\}'
-timestamp_grouped='\{([0-9]+)\}'
-metadata="$progress $timestamp"
-entry="$prefix$taskname $metadata"
+timestamp='\{[0-9]+\}'                           # used internally to track completion status
+timestamp_grouped='\{([0-9]+)\}' 
+metadata="$progress $timestamp"                  # everything after the task name
+entry="$prefix$taskname $metadata"               # a well-formed line of $save
 
 # ---------------------------------------------------------------------------
 
@@ -77,6 +77,8 @@ function state() {
 }
 
 # get indentation whitespace of task $1
+# the branch character is considered part of the indentation
+# e.g. "  ." would be have indentation "   " where "." is the branch character
 function indentspace() {
   cat "$save" | tr '\n' ';' | \
     sed -E -e "s/.*$indicator ($branches)$1 $progress $timestamp.*/\\1/" | \
@@ -103,18 +105,21 @@ function allocated() {
 
 # ---------------------------------------------------------------------------
 
-# set timestamp and progress of task $1 if it's active
+# set timestamp and progress of task $1 if $2 is $ACTIVE
 function update_task() {
-  stat=$(state $1)
-  if [ "\\$stat" != "$ACTIVE" ]; then
+  if [ "\\$2" != "$ACTIVE" ]; then
     return
   fi
   old_stamp=$(timestamp "$1")
   old_spent=$(spent "$1")
   new_stamp=$(date +%s)
   new_spent=$(echo "($old_spent*60 + ($new_stamp - $old_stamp)) / 60" | bc)
+
+  # error is subtracted from the old stamp to maintain precision on the order of seconds
+  # otherwise, calling update_task() at a 59 second interval would discard almost 1 full minute of time
   error=$(echo "($new_stamp - $old_stamp) % 60" | bc)
   new_stamp=$(echo "$new_stamp - $error" | bc)
+
   sedit "s/($prefix$1) $progress_grouped $timestamp/\\1 ($new_spent of \\3 min) {$new_stamp}/g"
 }
 
@@ -128,8 +133,10 @@ function update_stamp() {
 function update() {
   printf "" > "$swap"
   while IFS="" read -r line; do
-    task=$(echo "$line" | sed -E -e "s/$prefix($taskname) $metadata/\\1/") 
-    update_task "$task"
+    task=$(echo "$line" | sed -E -e "s/$indicator $branches($taskname) $metadata/\\1/") 
+    mark=$(echo "$line" | sed -E -e "s/($indicator) $branches$taskname $metadata/\\1/")
+    
+    update_task "$task" "$mark"
   done < "$save"
 }
 
@@ -139,8 +146,6 @@ function mark() {
 }
 
 # collapse all tasks and subtasks with indentation at least $1 onto a single line
-# the branch character is considered part of the indentation
-# e.g. "  ." would be have indentation "   " where "." is the branch character
 function collapse() {
   if [ "$1" == "" ]; then
     anyindent=""
