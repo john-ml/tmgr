@@ -128,8 +128,12 @@ function update_stamp() {
 
 # update timestamp and progress of active task
 function update() {
-  task="$(cat "$save" | tr '\n' ';' | sed -E -e "s/.*$ACTIVE $branches($taskname) $metadata.*/\\1/")"
-  #echo "Active task: $task"
+  flattened="$(cat "$save" | tr '\n' ';')"
+  task="$(echo "$flattened" | sed -E -e "s/.*$ACTIVE $branches($taskname) $metadata.*/\\1/")"
+  if [ "$flattened" == "$task" ]; then
+    # no active task
+    return
+  fi
   update_task "$task"
 }
 
