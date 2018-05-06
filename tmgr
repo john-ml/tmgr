@@ -88,7 +88,9 @@ function update_task() {
   old_stamp=$(timestamp "$1")
   old_spent=$(spent "$1")
   new_stamp=$(date +%s)
-  new_spent=$(echo "($old_spent*60+($new_stamp-$old_stamp))/60" | bc)
+  new_spent=$(echo "($old_spent*60 + ($new_stamp - $old_stamp)) / 60" | bc)
+  error=$(echo "($new_stamp - $old_stamp) % 60" | bc)
+  new_stamp=$(echo "$new_stamp - $error" | bc)
   sedit "s/($indicator $1) $progress_grouped $timestamp/\\1 ($new_spent of \\3 m) {$new_stamp}/g"
 }
 
