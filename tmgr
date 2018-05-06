@@ -147,6 +147,10 @@ function evaluate() {
   i|idle)
     idle
     ;;
+  s|sort)
+    sort "$save" > "$swap"
+    cp "$swap" "$save"
+    ;;
   g|go)
     go "$2"
     ;;
