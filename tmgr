@@ -386,7 +386,7 @@ function evaluate() {
     echo "  cl, clear: clear screen"
     echo "  h, help: show this text"
     echo "  q, quit: quit"
-    echo "idle, sort, clear, and exit take no arguments."
+    echo "purge, idle, sort, clear, and exit take no arguments."
     echo "Enter any of the other commands without any arguments for usage details."
     ;;
   q|quit)
