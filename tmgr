@@ -70,9 +70,7 @@ function allocated() {
 # set timestamp and progress of task $1 if it's active
 function update_task() {
   stat=$(state $1)
-  echo "$stat"
   if [ "\\$stat" != "$ACTIVE" ]; then
-    echo "ntohing to do here"
     return
   fi
   old_stamp=$(timestamp "$1")
@@ -86,9 +84,7 @@ function update_task() {
 function update() {
   printf "" > "$swap"
   while IFS="" read -r line; do
-    echo "$line"
     task=$(echo "$line" | sed -E -e "s/$indicator ($taskname) $metadata/\\1/") 
-    echo "Updating $task"
     update_task "$task"
   done < "$save"
 }
@@ -97,8 +93,6 @@ function update() {
 function mark() {
   sedit "s/$indicator ($1 $metadata)/$2 \\1/g"
 }
-
-update
 
 # ---------------------------------------------------------------------------
 
@@ -177,6 +171,7 @@ while : ; do
 
   # eval is used to tokenize $cmd
   if verify "$cmd" "$instruction"; then
+    update
     eval 'evaluate '$cmd
   fi
 done
