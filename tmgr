@@ -105,11 +105,8 @@ function allocated() {
 
 # ---------------------------------------------------------------------------
 
-# set timestamp and progress of task $1 if $2 is $ACTIVE
+# set timestamp and progress of task $1, assuming that it's active
 function update_task() {
-  if [ "\\$2" != "$ACTIVE" ]; then
-    return
-  fi
   old_stamp=$(timestamp "$1")
   old_spent=$(spent "$1")
   new_stamp=$(date +%s)
@@ -129,15 +126,11 @@ function update_stamp() {
   sedit "s/($prefix$1 $progress) $timestamp/\\1 {$new_stamp}/g"
 }
 
-# update timestamps and progresses of all active tasks
+# update timestamp and progress of active task
 function update() {
-  printf "" > "$swap"
-  while IFS="" read -r line; do
-    task=$(echo "$line" | sed -E -e "s/$indicator $branches($taskname) $metadata/\\1/") 
-    mark=$(echo "$line" | sed -E -e "s/($indicator) $branches$taskname $metadata/\\1/")
-    
-    update_task "$task" "$mark"
-  done < "$save"
+  task="$(cat "$save" | tr '\n' ';' | sed -E -e "s/.*$ACTIVE $branches($taskname) $metadata.*/\\1/")"
+  #echo "Active task: $task"
+  update_task "$task"
 }
 
 # mark a task with name $1 as $2
@@ -185,8 +178,8 @@ function add() {
   fi
 }
 
-# remove task with name $1 and any subtasks
-function remove() {
+# delete task with name $1 and any subtasks
+function delete() {
   if verify "$1" "$taskname"; then
     if ! exists "$1"; then
       echo "Task '$1' doesn't exist."
@@ -241,7 +234,6 @@ function branch() {
         echo "Task '$2' already exists."
         return
       fi
-      sedit "s/($prefix)$1 ($metadata)/\\1 $2 \\2/g"
       if verify "$3" "[0-9]+"; then
         indent=$(cat "$save" | tr -d '\n' | sed -E -e "s/.*$indicator ($branches)$1 $metadata.*/\\1/" | sed -E -e "s/ |$branch/ /")
         sedit "s/($prefix$1 $metadata)/\\1\n  $indent$branch$2 (0 of $3 min) {$(date +%s)}/g"
@@ -250,7 +242,7 @@ function branch() {
   fi
 }
 
-# remove all tasks (and their children) marked as closed
+# delete all tasks (and their children) marked as closed
 function purge() {
   # preserve subtrees
   collapse
@@ -275,6 +267,7 @@ function close() {
 
 # mark active task as semi-closed
 function idle() {
+  update
   sedit "s/$ACTIVE ($branches$taskname $metadata)/$SEMICLOSED \\1/g"
 }
 
@@ -314,6 +307,7 @@ function evaluate() {
   case "$1" in
   l|list)
     if verify_usage $argc 0 "list"; then
+      update
       list
     fi
     ;;
@@ -322,17 +316,17 @@ function evaluate() {
       add "$2" "$3"
     fi
     ;;
-  r|remove)
-    if verify_usage $argc 1 "remove name"; then
-      remove "$2"
+  d|delete)
+    if verify_usage $argc 1 "delete name"; then
+      delete "$2"
     fi
     ;;
-  re|realloc)
+  r|realloc)
     if verify_usage $argc 2 "realloc name minutes"; then
       realloc "$2" "$3"
     fi
     ;;
-  mv|rename)
+  m|rename)
     if verify_usage $argc 2 "rename old new"; then
       rename "$2" "$3"
     fi
@@ -376,11 +370,11 @@ function evaluate() {
     echo "Commands:"
     echo "  l, list: list all tasks"
     echo "  a, add: add task to list"
-    echo "  r, remove: remove task from list"
+    echo "  d, delete: delete task from list"
     echo "  re, realloc: adjust estimated task duration"
-    echo "  mv, rename: rename a task"
+    echo "  m, rename: rename a task"
     echo "  b, branch: create a subtask"
-    echo "  p, purge: remove all closed tasks from list"
+    echo "  p, purge: delete all closed tasks from list"
     echo "  c, close: mark task as closed"
     echo "  i, idle: pause active task"
     echo "  s, sort: sort task list"
@@ -410,7 +404,6 @@ while : ; do
   read -p "$prompt" cmd
 
   if verify "$cmd" "$instruction"; then
-    update
     # eval is used to tokenize $cmd
     eval 'evaluate '$cmd
   fi
