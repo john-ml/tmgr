@@ -56,6 +56,16 @@ function sedit() {
 
 # ---------------------------------------------------------------------------
 
+# check that task $1 exists (sets errorlevel to 1 if not, 0 otherwise)
+function exists() {
+  lines=$(cat "$save" | grep -E "$prefix$1 $metadata")
+  if [ "$lines" == "" ]; then
+    (exit 1)
+  else
+    (exit 0)
+  fi
+}
+
 # get state of task $1
 function state() {
   cat "$save" | tr '\n' ';' | \
@@ -64,9 +74,6 @@ function state() {
 
 # get indentation whitespace of task $1
 function indentspace() {
-#  echo "\"$(cat "$save" | tr '\n' ';' | \
-#    sed -E -e "s/.*$indicator ($branches)$1 $progress $timestamp.*/\\1/" | \
-#    sed -E -e "s/$branch/ /g")\""
   cat "$save" | tr '\n' ';' | \
     sed -E -e "s/.*$indicator ($branches)$1 $progress $timestamp.*/\\1/" | \
     sed -E -e "s/$branch/ /g"
@@ -157,6 +164,10 @@ function list() {
 # add a task with name $1 and time allocation $2 (in minutes)
 function add() {
   if verify "$1" "$taskname"; then
+    if exists "$1"; then
+      echo "Task '$1' already exists."
+      return
+    fi
     if verify "$2" "[0-9]+"; then
       echo "$OPEN $1 (0 of $2 min) {$(date +%s)}" >> "$save"
     fi
@@ -166,6 +177,10 @@ function add() {
 # remove task with name $1 and any subtasks
 function remove() {
   if verify "$1" "$taskname"; then
+    if ! exists "$1"; then
+      echo "Task '$1' doesn't exist."
+      return
+    fi
     indent="$(indentspace $1)"
     collapse "$indent"
     sedit "/$prefix$1 $metadata.*/d"
@@ -176,6 +191,10 @@ function remove() {
 # adjust task $1 to take $2 minutes
 function realloc() {
   if verify "$1" "$taskname"; then
+    if ! exists "$1"; then
+      echo "Task '$1' doesn't exist."
+      return
+    fi 
     if verify "$2" "[0-9]+"; then
       sedit "s/($prefix$1) $progress_grouped ($timestamp)/\\1 (\\2 of $2 min) \\4/g"
     fi
@@ -185,7 +204,15 @@ function realloc() {
 # rename task $1 to $2
 function rename() {
   if verify "$1" "$taskname"; then
+    if ! exists "$1"; then
+      echo "Task '$1' doesn't exist."
+      return
+    fi
     if verify "$2" "$taskname"; then 
+      if exists "$2"; then
+        echo "Task '$2' already exists."
+        return
+      fi
       sedit "s/($prefix)$1 ($metadata)/\\1 $2 \\2/g"
     fi
   fi
@@ -194,7 +221,16 @@ function rename() {
 # create subtask $2 of task $1 to take $3 minutes
 function branch() {
   if verify "$1" "$taskname"; then
+    if ! exists "$1"; then
+      echo "Task '$1' doesn't exist."
+      return
+    fi
     if verify "$2" "$taskname"; then 
+      if exists "$2"; then
+        echo "Task '$2' already exists."
+        return
+      fi
+      sedit "s/($prefix)$1 ($metadata)/\\1 $2 \\2/g"
       if verify "$3" "[0-9]+"; then
         indent=$(cat "$save" | tr -d '\n' | sed -E -e "s/.*$indicator ($branches)$1 $metadata.*/\\1/" | sed -E -e "s/ |$branch/ /")
         sedit "s/($prefix$1 $metadata)/\\1\n  $indent$branch$2 (0 of $3 min) {$(date +%s)}/g"
@@ -218,6 +254,10 @@ function purge() {
 # mark task with name $1 as closed
 function close() {
   if verify "$1" "$taskname"; then
+    if ! exists "$1"; then
+      echo "Task '$1' doesn't exist."
+      return
+    fi
     mark "$1" $CLOSED
   fi
 }
@@ -230,6 +270,10 @@ function idle() {
 # set task with name $1 to be active
 function go() {
   if verify "$1" "$taskname"; then
+    if ! exists "$1"; then
+      echo "Task '$1' doesn't exist."
+      return
+    fi
     idle
     update_stamp "$1"
     mark "$1" $ACTIVE
