@@ -133,6 +133,24 @@ function remove() {
   sedit "/$indicator $1 $metadata/d"
 }
 
+# adjust task $1 to take $2 minutes
+function realloc() {
+  if verify "$1" "$taskname"; then
+    if verify "$2" "[0-9]+"; then
+      sedit "s/($indicator $1) $progress_grouped ($timestamp)/\\1 (\\2 of $2 m) \\4/g"
+    fi
+  fi
+}
+
+# rename task $1 to $2
+function rename() {
+  if verify "$1" "$taskname"; then
+    if verify "$2" "$taskname"; then 
+      sedit "s/($indicator) $1 ($metadata)/\\1 $2 \\2/g"
+    fi
+  fi
+}
+
 # mark task with name $1 as closed
 function close() {
   mark "$1" $CLOSED
@@ -181,6 +199,16 @@ function evaluate() {
       remove "$2"
     fi
     ;;
+  re|realloc)
+    if verify_usage $argc 2 "realloc name minutes"; then
+      realloc "$2" "$3"
+    fi
+    ;;
+  mv|rename)
+    if verify_usage $argc 2 "rename old new"; then
+      rename "$2" "$3"
+    fi
+    ;;
   c|close)
     if verify_usage $argc 1 "close name"; then
       close "$2"
@@ -211,6 +239,8 @@ function evaluate() {
     echo "  l, list: list all tasks"
     echo "  a, add: add task to list"
     echo "  r, remove: remove task from list"
+    echo "  re, realloc: adjust estimated task duration"
+    echo "  mv, rename: rename a task"
     echo "  c, close: mark task as closed"
     echo "  i, idle: pause active task"
     echo "  s, sort: sort task list"
