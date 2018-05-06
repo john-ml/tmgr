@@ -22,6 +22,8 @@ progress_grouped='\(([0-9]+) of ([0-9]+) min\)'
 timestamp='\{[0-9]+\}'
 timestamp_grouped='\{([0-9]+)\}'
 metadata="$progress $timestamp"
+parent="$indicator $taskname $metadata"
+child="$indicator  *$branch$taskname $metadata"
 
 # ---------------------------------------------------------------------------
 
@@ -117,6 +119,19 @@ function mark() {
   sedit "s/$indicator ($branches$1 $metadata)/$2 \\1/g"
 }
 
+# collapse all tasks and subtasks onto a single line (so one task tree per line)
+function collapse() {
+  echo -e "$(cat "$save" | tr '\n' ';' | \
+    sed -E -e "s/($parent(;$child)*);/\\1\\\\n/g")" > "$swap"
+  cp "$swap" "$save"
+}
+
+# expand collapsed subtasks onto their own lines
+function expand() {
+  echo -e "$(cat "$save" | tr ';' '\n')" > "$swap"
+  cp "$swap" "$save"
+}
+
 # ---------------------------------------------------------------------------
 
 # list all tasks
@@ -194,14 +209,19 @@ function go() {
 
 # sort task list
 function sort_list() {
-  printf "" > "$swap"
+  # preserve subtrees
+  collapse
 
   # sort by status, then alphanumerically
+  printf "" > "$swap"
   grep -E "^$CLOSED" "$save" | sort >> "$swap"
   grep -E "^$SEMICLOSED" "$save" | sort >> "$swap"
   grep -E "^$OPEN" "$save" | sort >> "$swap"
   grep -E "^$ACTIVE" "$save" | sort >> "$swap"
   cp "$swap" "$save"
+
+  # restore subtrees
+  expand
 }
 
 # evaluate a command $1 with arguments $2 $3 ...
