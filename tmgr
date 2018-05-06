@@ -80,6 +80,12 @@ function update_task() {
   sedit "s/($indicator $1) $progress_grouped $timestamp/\\1 ($new_spent of \\3 m) {$new_stamp}/g"
 }
 
+# set timestamp of task $1 to now
+function update_stamp() {
+  new_stamp=$(date +%s)
+  sedit "s/($indicator $1 $progress) $timestamp/\\1 {$new_stamp}/g"
+}
+
 # update timestamps and progresses of all active tasks
 function update() {
   printf "" > "$swap"
@@ -126,6 +132,7 @@ function idle() {
 # set task with name $1 to be active
 function go() {
   idle
+  update_stamp "$1"
   mark "$1" $ACTIVE
 }
 
