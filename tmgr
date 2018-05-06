@@ -217,12 +217,12 @@ function evaluate() {
     echo "  g, go: set new active task"
     echo "  cl, clear: clear screen"
     echo "  h, help: show this text"
-    echo "  e, exit: exit"
+    echo "  q, quit: quit"
     echo "idle, sort, clear, and exit take no arguments."
     echo "Enter any of the other commands without any arguments for usage details."
     ;;
-  e|exit)
-    if verify_usage $argc 0 "exit"; then
+  q|quit)
+    if verify_usage $argc 0 "quit"; then
       exit
     fi
     ;;
