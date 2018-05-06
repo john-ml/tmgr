@@ -221,7 +221,7 @@ function rename() {
         echo "Task '$2' already exists."
         return
       fi
-      sedit "s/($prefix)$1 ($metadata)/\\1 $2 \\2/g"
+      sedit "s/($prefix)$1 ($metadata)/\\1$2 \\2/g"
     fi
   fi
 }
