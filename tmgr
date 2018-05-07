@@ -269,6 +269,18 @@ function close() {
   fi
 }
 
+# mark task with name $1 as open
+function open() {
+  if verify "$1" "$taskname"; then
+    if ! exists "$1"; then
+      echo "Task '$1' doesn't exist."
+      return
+    fi
+    mark "$1" $OPEN
+  fi
+}
+
+
 # mark active task as semi-closed
 function idle() {
   update
@@ -345,6 +357,11 @@ function evaluate() {
       purge
     fi
     ;;
+  o|open)
+    if verify_usage $argc 1 "open name"; then
+      close "$2"
+    fi
+    ;;
   c|close)
     if verify_usage $argc 1 "close name"; then
       close "$2"
@@ -379,6 +396,7 @@ function evaluate() {
     echo "  m, rename: rename a task"
     echo "  b, branch: create a subtask"
     echo "  p, purge: delete all closed tasks from list"
+    echo "  o, open: mark task as open"
     echo "  c, close: mark task as closed"
     echo "  i, idle: pause active task"
     echo "  s, sort: sort task list"
