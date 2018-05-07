@@ -265,7 +265,7 @@ function close() {
       echo "Task '$1' doesn't exist."
       return
     fi
-    mark "$1" $CLOSED
+    mark "$1" "$CLOSED"
   fi
 }
 
@@ -276,7 +276,7 @@ function open() {
       echo "Task '$1' doesn't exist."
       return
     fi
-    mark "$1" $OPEN
+    mark "$1" "$OPEN"
   fi
 }
 
@@ -296,7 +296,7 @@ function go() {
     fi
     idle
     update_stamp "$1"
-    mark "$1" $ACTIVE
+    mark "$1" "$ACTIVE"
   fi
 }
 
