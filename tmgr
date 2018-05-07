@@ -282,14 +282,19 @@ function close() {
   fi
 }
 
-# mark task with name $1 as open
-function open() {
+# mark closed task $1 as semiclosed
+function unclose() {
   if verify "$1" "$taskname"; then
     if ! exists "$1"; then
       echo "Task '$1' doesn't exist."
       return
     fi
-    mark "$1" "$OPEN"
+    stat="$(state "$1")"
+    if [ "$stat" != "$CLOSED" ]; then
+      echo "Task '$1' isn't closed."
+      return
+    fi
+    mark "$1" "$SEMICLOSED"
   fi
 }
 
@@ -370,14 +375,14 @@ function evaluate() {
       purge
     fi
     ;;
-  o|open)
-    if verify_usage $argc 1 "open name"; then
-      open "$2"
-    fi
-    ;;
   c|close)
     if verify_usage $argc 1 "close name"; then
       close "$2"
+    fi
+    ;;
+  u|unclose)
+    if verify_usage $argc 1 "unclose name"; then
+      unclose "$2"
     fi
     ;;
   i|idle)
@@ -409,8 +414,8 @@ function evaluate() {
     echo "  m, rename: rename a task"
     echo "  b, branch: create a subtask"
     echo "  p, purge: delete all closed tasks from list"
-    echo "  o, open: mark task as open"
     echo "  c, close: mark task as closed"
+    echo "  u, unclose: unclose a task"
     echo "  i, idle: pause active task"
     echo "  s, sort: sort task list"
     echo "  g, go: set new active task"
