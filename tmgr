@@ -359,7 +359,7 @@ function evaluate() {
     ;;
   o|open)
     if verify_usage $argc 1 "open name"; then
-      close "$2"
+      open "$2"
     fi
     ;;
   c|close)
