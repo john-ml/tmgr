@@ -174,11 +174,11 @@ function expand() {
 # list all tasks
 function list() {
   #closed, open, semiclosed, active
-  echo -e "$(cat "tasks.txt" | sed -E -e "s/ $timestamp//g" | \
-    sed -E -e "s/($CLOSED $branches$taskname $progress)/$CLOSED_COLOR\\1/g" | \
-    sed -E -e "s/($OPEN $branches$taskname $progress)/$OPEN_COLOR\\1/g" | \
-    sed -E -e "s/($SEMICLOSED $branches$taskname $progress)/$SEMICLOSED_COLOR\\1/g" | \
-    sed -E -e "s/($ACTIVE $branches$taskname $progress)/$ACTIVE_COLOR\\1/g" | \
+  echo -e "$(cat "$save" | sed -E -e "s/ $timestamp//g" | \
+    sed -E -e "s/(^$CLOSED $branches$taskname $progress)/$CLOSED_COLOR\\1/g" | \
+    sed -E -e "s/(^$SEMICLOSED $branches$taskname $progress)/$SEMICLOSED_COLOR\\1/g" | \
+    sed -E -e "s/(^$ACTIVE $branches$taskname $progress)/$ACTIVE_COLOR\\1/g" | \
+    sed -E -e "s/(^$OPEN $branches$taskname $progress)/$OPEN_COLOR\\1/g" | \
     sed -E -e "s/($progress)/\\1$NO_COLOR/g")"
 }
 
@@ -405,6 +405,11 @@ function evaluate() {
       clear
     fi
     ;;
+  raw)
+    if verify_usage $argc 0 "raw"; then
+      vim "$save"
+    fi
+    ;;
   h|help)
     echo "Commands:"
     echo "  l, list: list all tasks"
@@ -420,9 +425,10 @@ function evaluate() {
     echo "  s, sort: sort task list"
     echo "  g, go: set new active task"
     echo "  cl, clear: clear screen"
+    echo "  raw: open task list in vim"
     echo "  h, help: show this text"
     echo "  q, quit: quit"
-    echo "purge, idle, sort, clear, and exit take no arguments."
+    echo "purge, idle, sort, clear, help, raw, and exit take no arguments."
     echo "Enter any of the other commands without any arguments for usage details."
     ;;
   q|quit)
