@@ -254,7 +254,6 @@ function branch() {
       fi
       if verify "$3" "[0-9]+"; then
         indent=$(indentspace "$1")
-        echo "\"$indent\""
         sedit "s/($prefix$1 $metadata)/\\1\n  $indent$branch$2 (0 of $3 min) {$(date +%s)}/g"
       fi
     fi
