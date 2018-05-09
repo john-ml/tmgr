@@ -87,8 +87,9 @@ function state() {
 # the branch character is considered part of the indentation
 # e.g. "  ." would be have indentation "   " where "." is the branch character
 function indentspace() {
-  cat "$save" | tr '\n' ';' | \
-    sed -E -e "s/.*$indicator ($branches)$1 $progress $timestamp.*/\\1/" | \
+  echo > "$swap"
+  cat "$swap" "$save" | tr '\n' ';' | \
+    sed -E -e "s/.*;$indicator ($branches)$1 $progress $timestamp.*/\\1/" | \
     sed -E -e "s/$branch/ /g"
 }
 
@@ -154,7 +155,7 @@ function collapse() {
   if [ "$1" == "" ]; then
     anyindent=""
   else
-    anyindent="$(echo "$1" | sed -E 's/ / */g')$branch?"
+    anyindent="$(echo "$1" | sed -E "s/ /( |$branch)?/g")"
   fi
   parent="$indicator $anyindent$taskname $metadata"
   child="$indicator $1 *$branch$taskname $metadata"
@@ -252,7 +253,8 @@ function branch() {
         return
       fi
       if verify "$3" "[0-9]+"; then
-        indent=$(cat "$save" | tr -d '\n' | sed -E -e "s/.*$indicator ($branches)$1 $metadata.*/\\1/" | sed -E -e "s/ |$branch/ /")
+        indent=$(indentspace "$1")
+        echo "\"$indent\""
         sedit "s/($prefix$1 $metadata)/\\1\n  $indent$branch$2 (0 of $3 min) {$(date +%s)}/g"
       fi
     fi
