@@ -340,7 +340,7 @@ function sort_list() {
 function evaluate() {
   argc=$(echo $#-1 | bc)
   case "$1" in
-  l|list)
+  l|ls|list)
     if verify_usage $argc 0 "list"; then
       update
       list
@@ -414,7 +414,7 @@ function evaluate() {
     ;;
   h|help)
     echo "Commands:"
-    echo "  l, list: list all tasks"
+    echo "  l, ls, list: list all tasks"
     echo "  a, add: add task to list"
     echo "  d, delete: delete task from list"
     echo "  re, realloc: adjust estimated task duration"
