@@ -378,6 +378,7 @@ function evaluate() {
     ;;
   c|close)
     if verify_usage $argc 1 "close name"; then
+      update
       close "$2"
     fi
     ;;
