@@ -343,6 +343,7 @@ function evaluate() {
   l|ls|list)
     if verify_usage $argc 0 "list"; then
       update
+      clear
       list
     fi
     ;;
@@ -414,7 +415,7 @@ function evaluate() {
     ;;
   h|help)
     echo "Commands:"
-    echo "  l, ls, list: list all tasks"
+    echo "  l, ls, list: clear screen and list all tasks"
     echo "  a, add: add task to list"
     echo "  d, delete: delete task from list"
     echo "  re, realloc: adjust estimated task duration"
