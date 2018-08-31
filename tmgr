@@ -432,7 +432,7 @@ function evaluate() {
     echo "  h, help: show this text"
     echo "  q, quit: quit"
     echo "purge, idle, sort, clear, help, raw, and exit take no arguments."
-    echo "Enter any of the other commands without any arguments for usage details."
+    echo "Enter any of the other commands without any arguments for usage."
     ;;
   q|quit)
     if verify_usage $argc 0 "quit"; then
